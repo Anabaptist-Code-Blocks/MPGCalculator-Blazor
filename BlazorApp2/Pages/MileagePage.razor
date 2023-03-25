@@ -1,0 +1,140 @@
+﻿@using BlazorApp2.Data;
+<h3>Mileage</h3>
+
+<div class="row">
+    <div class="col-1">
+        <label>Date</label>
+    </div>
+    <div class="col-3">
+        <input @bind-value="@mileage.Date" type="date"/>
+    </div>
+    <div class="col-3"></div>
+    <div class="col-1">
+        <label>Average MPG</label>
+    </div>
+    <div class="col-3">
+        <input @bind-value="@AverageMPG" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-1">
+        <label>Miles</label>
+    </div>
+    <div class="col-3">
+        <input @bind-value="@mileage.Miles" type="number"/>
+    </div>
+</div>
+<div class="row">
+    <div class="col-1">
+        <label>Gallons</label>
+    </div><div class="col-3">
+        <input @bind-value="@mileage.Gallons" type="number"/>
+    </div>
+</div>
+<div class="row">
+    <div class="col-1">
+        <label>MPG</label>
+    </div>
+    <div class="col-3">
+        <input value="@mileage.MPG" type="number" readonly/>
+</div>
+</div>
+<div class="row">
+    <div class="col-1">
+        <label>Price per Gallon</label>
+    </div>
+    <div class="col-3">
+        <input @bind-value="@mileage.PricePerGallon" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-1">
+        <label>Total</label>
+    </div>
+    <div class="col-3">
+        @if (mileage != null && mileage.Total != 0)
+        {
+            <input @bind-value="@mileage.Total" readonly />
+        }
+        else
+        {
+            <button @onclick="CalculateTotal">Calculate</button>
+        }
+    </div>
+</div>
+@if (mileageService.Mileages == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Miles</th>
+                <th>Meters</th>
+                <th>Gallons</th>
+                <th>Liters</th>
+                <th>MPG</th>
+                <th>Price Per Gallon</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in mileageService.Mileages)
+            {
+                <tr>
+                    <td>@m.Date.ToShortDateString()</td>
+                    <td>@m.Miles</td>
+                    <td>@m.Meters</td>
+                    <td>@m.Gallons</td>
+                    <td>@m.Liters</td>
+                    <td>@m.MPG</td>
+                    <td>@m.PricePerGallon</td>
+                    <td>@m.Total</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    [Inject] IMileageService mileageService{ get; set; }
+    Mileage mileage { get; set; } = new();
+    decimal AverageMPG{ get; set; }
+
+    protected override void OnInitialized()
+    {
+        mileage = new();
+        mileage.Date = DateTime.Today;
+        AverageMPG = CalculateAverageMPG();
+    }
+    void CalculateTotal()
+    {
+        try
+        {
+            mileage.Total = mileageService.CalculateTotalGallons(mileage);
+            mileageService.Mileages.Add(mileage);
+            AverageMPG = CalculateAverageMPG();
+            mileage = new();
+        }
+        catch(Exception ex)
+        {
+            //logging
+        }
+    }
+    decimal CalculateAverageMPG()
+    {
+        decimal avg = 0;
+        if(mileageService.Mileages != null && mileageService.Mileages.Count() > 0)
+        {
+            var totalmiles = mileageService.Mileages.Sum(e => e.Miles);
+            var totalgallons = mileageService.Mileages.Sum(e => e.Gallons);
+            if(totalgallons != 0 && totalmiles != 0)
+            {
+                avg = totalmiles / totalgallons;
+            }
+        }
+        return avg;
+    }
+}
